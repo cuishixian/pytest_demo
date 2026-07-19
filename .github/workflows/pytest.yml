@@ -2,34 +2,41 @@ name: Pytest API Testing
 
 on:
   push:
-    branches: [ "master" ]   # 如果您之前改成了master，这里保持master
+    branches: [ "main" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "main" ]
 
 permissions:
   contents: read
 
 jobs:
   Pytes-API-Testing:
+
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
     - name: Set up Python 3.10
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v3
       with:
         python-version: "3.10"
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        
+
     - name: Test with pytest
       run: |
-        pytest --html=report.html --self-contained-html
+        ENV=dev pytest
 
-    - name: Upload Pytest report
-      uses: actions/upload-artifact@v4
+    - name: Archive Pytest allure test report
+      uses: actions/upload-artifact@v3
       with:
-        name: Pytest-test-report
-        path: report.html
+        name: Pytest-allure-report
+        path: allure-results
+
+    - name: Upload Pytest allure report to GitHub
+      uses: actions/upload-artifact@v3
+      with:
+        name: Pytest-allure-report
+        path: allure-results
