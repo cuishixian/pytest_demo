@@ -25,21 +25,23 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install allure-pytest   # <--- 关键：安装 allure-pytest
+        pip install allure-pytest
 
-    - name: Test with pytest
+    - name: Test with pytest (generate Allure data)
       run: |
-        ENV=dev pytest tests/ --alluredir=./allure-results   # <--- 生成原始数据
+        ENV=dev pytest tests/ --alluredir=./allure-results
 
     - name: Generate Allure Report
-      uses: andgineer/allure-report@v3.6   # <--- 使用第三方 Action 生成报告
-      if: always()   # 即使测试失败也生成报告
-      with:
-        allure-results: ./allure-results   # 指定原始数据目录
-
-    - name: Upload Allure report as artifact
-      uses: actions/upload-artifact@v4
+      uses: andgineer/allure-report@v3.6
       if: always()
       with:
-        name: allure-report
-        path: allure-report   # andgineer/allure-report 默认输出到 allure-report 目录
+        allure-results: ./allure-results
+
+    - name: Deploy Allure Report to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      if: always()
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./allure-report
+        publish_branch: gh-pages
+        destination_dir: ./   # 报告放在 gh-pages 分支的根目录
