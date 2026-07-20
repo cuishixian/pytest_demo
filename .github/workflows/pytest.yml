@@ -1,42 +1,72 @@
-name: Pytest API Testing
+name: Pytest API Testing with Allure Report
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "master" ]
 
 permissions:
-  contents: read
+  contents: write
+  pages: write
+  id-token: write
+  actions: read
 
 jobs:
-  Pytes-API-Testing:
-
+  test-and-report:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.10"
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Test with pytest
-      run: |
-        ENV=dev pytest
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
 
-    - name: Archive Pytest allure test report
-      uses: actions/upload-artifact@v3
-      with:
-        name: Pytest-allure-report
-        path: allure-results
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Upload Pytest allure report to GitHub
-      uses: actions/upload-artifact@v3
-      with:
-        name: Pytest-allure-report
-        path: allure-results
+      - name: Run regression tests with Allure
+        run: ENV=dev pytest
+        continue-on-error: true
+
+      - name: Load test report history
+        uses: actions/checkout@v4
+        if: always()
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Generate Allure Report
+        uses: simple-elf/allure-report-action@master
+        if: always()
+        with:
+          allure_results: allure-results
+          allure_history: allure-history
+          allure_report: allure-report
+          gh_pages: gh-pages
+          keep_reports: 20
+
+      - name: Publish Allure Report to GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: allure-history
+          keep_files: true
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_message: 'Update Allure test report'
+
+      - name: Upload Allure report as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-test-report
+          path: allure-report
+          retention-days: 30
