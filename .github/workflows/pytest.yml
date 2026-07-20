@@ -2,46 +2,41 @@ name: Pytest API Testing
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "main" ]
 
 permissions:
   contents: read
 
 jobs:
-  Pytest-API-Testing:
+  Pytes-API-Testing:
+
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-
+    - uses: actions/checkout@v3
     - name: Set up Python 3.10
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v3
       with:
         python-version: "3.10"
-
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install allure-pytest
 
-    - name: Test with pytest (generate Allure data)
+    - name: Test with pytest
       run: |
-        ENV=dev pytest tests/ --alluredir=./allure-results
+        ENV=dev pytest
 
-    - name: Generate Allure Report
-      uses: andgineer/allure-report@v3.6
-      if: always()
+    - name: Archive Pytest allure test report
+      uses: actions/upload-artifact@v3
       with:
-        allure-results: ./allure-results
+        name: Pytest-allure-report
+        path: allure-results
 
-    - name: Deploy Allure Report to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      if: always()
+    - name: Upload Pytest allure report to GitHub
+      uses: actions/upload-artifact@v3
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./allure-report
-        publish_branch: gh-pages
-        destination_dir: ./   # 报告放在 gh-pages 分支的根目录
+        name: Pytest-allure-report
+        path: allure-results
